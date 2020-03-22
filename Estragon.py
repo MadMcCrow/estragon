@@ -7,7 +7,10 @@
 class EstragonLog   :
 
     def PrintToLog(self, text)  :
-        print(text)
+        import inspect
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        print(str(calframe[1][3]) + " - "+ str(calframe[2][3]) + " : " + text)
 
 
     def __init__(self)          :
@@ -80,27 +83,63 @@ class ConfigFile    :
 #   Class for godot sources and installation
 class Sources       :
 
-    from git import Repo
-
     _branch = "master"  # the installed branch
     _Path   = None      # the path to the installation
-    _repo   = Repo
+    _repo   = None
 
+    # gets the path of this repository
     def getPath(self)   :
         return _Path
 
+    # allow to get the current branch we're using
     def getBranch(self) :
         return _branch
 
-    def _clone(self, originRepo = "https://github.com/godotengine/godot.git")         :
-        Log("Cloning repo from : " + originRepo)
-        godotrepo = self._repo.clone(originRepo)
-
+    # default initializer should not be called directly
     def __init__(self):
         super().__init__()
+
+
+    def _UpdateFromRepo(self)   :
+        from git import Repo
+        self._Path   = self._repo.working_tree_dir
+        self._branch = self._repo.active_branch
+        Log( str(self._Path) + " is on branch " + str(self._branch) )
+
     
+    # static method to get a valid Sources object with a local repository
     @staticmethod
-    def GetLocalSource(self, path)    :
+    def GetLocalSource( path)    :
+        import os.path
+        from git import Repo
         retsource = Sources()
-        retsource._repo = Repo(path)
+        retsource._repo = Repo(os.path.join(path, 'godot'))
+        retsource._UpdateFromRepo()
         return retsource
+
+    # static method to get a valid Sources object with a distant repository
+    @staticmethod
+    def GetFromOriginSource(path, originRepo = "https://github.com/godotengine/godot.git")    :
+        import os.path
+        from git import Repo
+        retsource = Sources()
+        retsource._repo = Repo.clone_from(originRepo, os.path.join(path, 'godot'))
+        retsource._UpdateFromRepo()
+        return retsource
+
+    # static method to get a valid Sources object fully automated (will select for you the correct version)
+    @staticmethod
+    def GetGodotSource(path, originRepo = "https://github.com/godotengine/godot.git")   :
+        import os.path 
+        fullpath = os.path.join(path, 'godot')
+        if os.path.isfile(os.path.join(fullpath,"README.md"))   :
+            Log("path already in use, trying to get repo")
+            return Sources.GetLocalSource(path)
+        else                                            :
+            Log("path not in use, cloning repo")
+            return Sources.GetFromOriginSource(path, originRepo)
+        return None
+
+        
+class Build()   :
+    
