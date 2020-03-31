@@ -3,14 +3,27 @@
 #   to automate some frequent Godot tasks
 #
 
+class Version   :
+
+    def __init__(self):
+        super().__init__()
+        print("Estragon V1.0")
+
+debug = False
+
 #   Class for log, will allow for more custom log
 class EstragonLog   :
+
+    _LogString = str()
 
     def PrintToLog(self, text)  :
         import inspect
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
-        print(str(calframe[1][3]) + " - "+ str(calframe[2][3]) + " : " + text)
+        global debug
+        if debug :
+            print(str(calframe[1][3]) + " - "+ str(calframe[2][3]) + " : " + text)
+        self._LogString = self._LogString + str(calframe[1][3]) + " - "+ str(calframe[2][3]) + " : " + text + "\n"
 
 
     def __init__(self)          :
@@ -102,11 +115,13 @@ class Sources       :
 
     def _UpdateFromRepo(self)   :
         from git import Repo
-        self._Path   = self._repo.working_tree_dir
-        self._branch = self._repo.active_branch
-        Log( str(self._Path) + " is on branch " + str(self._branch) )
+        if self._repo  is not None:
+            self._Path   = self._repo.working_tree_dir
+            self._branch = self._repo.active_branch
+            self._repo.git.pull()
+            Log(self._repo.git.status())
 
-    
+
     # static method to get a valid Sources object with a local repository
     @staticmethod
     def GetLocalSource( path)    :
@@ -143,3 +158,213 @@ class Sources       :
         
 class Build()   :
     
+    # Number of CPU core available
+    _CPUAvailable   = 1
+
+    # Path to Godot sources
+    _SourcesPath     = None
+
+    # Check if we have all necessary Build tools
+    @staticmethod
+    def CheckBuildTools()   :
+        from shutil import which
+        if which("scons") is None:
+            return False
+        from sys import platform
+        if platform.startswith('win'):
+            from os import environ
+            if environ.get('VS140COMNTOOLS') is None :
+                Log("Building on windows without visual studio, not supported by Estragon ")
+                return False
+        return True  
+    
+    @staticmethod
+    def buildGodot(path, extraArgs) :
+        if extraArgs is None    :
+            extraArgs = ''
+        from sys import platform
+        buildplateform = platform
+        if platform.startswith('linux'):
+            buildplateform = "x11"
+        if platform.startswith('win'):
+            buildplateform = "windows"
+        cli = "scons platform=" + buildplateform + " " + extraArgs
+        Log( "Build command  = " + cli)
+        from os import system
+        if platform.startswith('win'):
+            system("powershell" + cli)
+        else:
+            system(cli)
+        Log( "Scons finished ")
+
+    def __init__(self, path = None)  :
+        super().__init__()
+        from multiprocessing    import cpu_count
+        self._CPUAvailable = cpu_count
+        self._SourcesPath = path
+
+    def BuildEditor(self, extraArgs = None)    :
+        target= "release_debug"
+        if self._SourcesPath is not None     :
+            self.buildGodot(self._SourcesPath, extraArgs)
+        return
+
+
+# Class representing the editor
+class GodotEditor    :
+
+    # Path to this Editor
+    _EditorPath = None
+
+    # Access to Code Source
+    _Source = None
+
+    # Access to Build Tool
+    _Builder = None
+
+    def InitFromSource(self, repo = "https://github.com/godotengine/godot.git") :
+        self._Source = Sources.GetGodotSource(self._EditorPath, repo)
+
+    def BuildEditor(self, Args) :
+        self._Builder = Build(self._EditorPath)
+        self._Builder.BuildEditor(Args)
+
+    def __init__(self, Path)    :
+        super().__init__()
+        self._EditorPath = Path
+        if Path is None    :
+            from os import getcwd
+            self._EditorPath = getcwd()
+
+
+
+class Main      :
+    
+    from enum import Enum
+    class Task(Enum)        :
+        Nothing     = 0
+        GetEditor   = 1
+        Build       = 2
+        Run         = 3
+
+    #Path Given to the main
+    _ExecPath = None
+
+    #Args you want to specify for build
+    _ExtraArgs = None
+
+    # Tasks
+    _Tasks = [Task.Nothing] 
+
+    # Editor to use
+    _Editor = None
+
+    # Configuration data we should be able to read and write
+    _EstragonConfig = None
+
+    # Whether we should be debugging or not 
+    _debug = False
+
+    def _help(self, reason = 0)  :
+        from sys import exit    
+        helptext = """Usage : Estragon [options]
+
+        Available commands : 
+        -p  --path [path_to_godot]          : Specify the path for download/godot sources
+        -e  --get_editor                    : get godot editor (download/update will not build)
+        -b  --build                         : Build godot
+        -a  --extra_args [build_arguments]  : Build arguments
+
+        commands can be set in any order
+        """
+        if reason != 0  :
+            print("you have to specify arguments for Estragon \n")
+        print(helptext)
+        exit(reason)
+
+
+    def _SaveConfigToFile(self) :
+        if self._EstragonConfig is None:
+            from os import getcwd
+            self._EstragonConfig = ConfigFile(self.getcwd())
+        if self._ExecPath is not None   :
+            self._EstragonConfig.saveValue("Path", str(self._ExecPath))
+        if self._ExtraArgs is not None  :
+            self._EstragonConfig.saveValue("ExtraArgs", str(self._ExtraArgs))
+        
+    def _LoadFromConfig(self, pathToConfig):
+            if self._EstragonConfig is not None:
+                if self._ExtraArgs is not None :
+                    Log("overriding Extra Args ")
+                self._ExtraArgs = self._EstragonConfig.getValue("ExtraArgs")
+                if self._ExecPath is not None :
+                    Log("overriding Exec path ")
+                self._ExecPath = self._EstragonConfig.getValue("Path")
+
+    def _getEditor(self, path) :
+        Log("Getting Godot")
+        self._Editor = GodotEditor()
+        self._Editor.InitFromSource(path)
+    
+    def _build(self, path, args) :
+        Log("Building Godot")
+        if self._Editor is not None:
+            self._Editor.BuildEditor(_ExtraArgs)
+
+    
+
+    def _ParseArgs(self) :
+        from sys    import argv      
+        from getopt import getopt
+        from getopt import GetoptError
+        try:   
+            opts, args = getopt(argv[1:], "heba:p:d", ["help","get_editor", "build", "extra_args=","path=", "debug"])
+        except GetoptError:          
+            self._help(2)                               
+        for opt, arg in opts:   
+            print(opt)             
+            if opt in ("-h", "--help"):
+                self._help()
+            elif opt == '-d':
+                global debug
+                debug = True
+            elif opt in ("-p", "--path"):
+                self._ExecPath = arg
+            elif opt in ("-a", "--extra_args"):
+                self._ExtraArgs = arg
+            elif opt in ("-e", "--get_editor"):
+                self._Tasks.append(Main.Task.GetEditor)
+            elif opt in ("-b", "--build"):
+                self._Tasks.append(Main.Task.Build)
+        print(self._Tasks)
+
+
+    def _DoTask(self)   :
+        print(self._Tasks)
+        if  self._Tasks is None or (len(self._Tasks)== 1 and self._Tasks[0] == Main.Task.Nothing ) :
+            Log(" No task ordered, will no do anything")
+            self._help()
+            return
+        Gets =  [i for i, x in enumerate(self._Tasks) if x == Main.Task.GetEditor]
+        if len(Gets) >= 1 :
+            Log("starting task : get editor")
+            self._getEditor(self._ExecPath)
+        Builds =  [i for i, x in enumerate(self._Tasks) if x == Main.Task.Build]
+        if len(Builds) >= 1 :
+            Log("starting task : build")
+            self._build(self._ExecPath, self._ExtraArgs)
+        
+    
+
+    # init the main object
+    def __init__(self):
+        super().__init__()
+        Version()
+        self._ParseArgs()
+        self._DoTask()
+        return
+
+
+# launch Estragon               
+Estragon = Main()
+
