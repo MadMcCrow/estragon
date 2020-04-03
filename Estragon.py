@@ -186,8 +186,8 @@ class Build()   :
                 return False
         return True  
     
-    @staticmethod
-    def buildGodot(path, extraArgs) :
+
+    def buildGodot(self, path, extraArgs) :
         import time;
         startTime = time.time()
         if Build.CheckBuildTools() is False   :
@@ -201,9 +201,11 @@ class Build()   :
         if platform.startswith('win'):
             buildplateform = "windows"
         from os import chdir
-        from os import path as ospath
-        chdir(ospath.join(path, 'godot'))
-        cli = "scons platform=" + buildplateform + " " + extraArgs
+        from os import path
+        buildpath = path.join(self._SourcesPath, 'godot')
+        chdir(buildpath)
+        Log("Building godot on path = " + buildpath)
+        cli = "scons " + "-j"+ str(self._CPUAvailable) + " platform=" + buildplateform + " " + extraArgs + " -Q"
         Log( "Build command  = " + cli)
         from os import system
         if platform.startswith('win'):
@@ -211,14 +213,14 @@ class Build()   :
         else:
             system(cli)
         endTime = time.time()
-        Log("Scons finished at endTime")
+        Log("Scons finished at " + str(endTime))
         duration = endTime - startTime
-        Log("Build Took :" + duration + "s")
+        Log("Build Took :" + str(duration) + "s")
 
     def __init__(self, path = None)  :
         super().__init__()
         from multiprocessing    import cpu_count
-        self._CPUAvailable = cpu_count
+        self._CPUAvailable = cpu_count()
         self._SourcesPath = path
 
     def BuildEditor(self, extraArgs = None)    :

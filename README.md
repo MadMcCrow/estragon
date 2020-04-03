@@ -5,6 +5,13 @@ https://fr.wikipedia.org/wiki/Estragon#Anecdote
 ## About
 Estragon is a simple tool to automate Godot processes on linux and possibly Windows 
 
+Try it yourself :
+`python3 Estragon.py --path=~/Desktop --get_editor --build`
+
+to find other uses : 
+`python3 Estragon.py --help`
+
+
 ## Current Status
 Estragon is very much under development. I plan on using it to make, build and deploy Godot games easier.
 
