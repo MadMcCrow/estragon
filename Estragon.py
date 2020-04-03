@@ -40,7 +40,7 @@ class ConfigFile    :
     _configPath = None
 
     # path to the file
-    _settingsDictionnary = None
+    _settingsDictionnary = dict()
 
     #read the dictionnary from an actual file
     def _ReadFromFile(self) :
@@ -102,11 +102,11 @@ class Sources       :
 
     # gets the path of this repository
     def getPath(self)   :
-        return _Path
+        return self._Path
 
     # allow to get the current branch we're using
     def getBranch(self) :
-        return _branch
+        return self._branch
 
     # default initializer should not be called directly
     def __init__(self):
@@ -204,7 +204,6 @@ class Build()   :
         self._SourcesPath = path
 
     def BuildEditor(self, extraArgs = None)    :
-        target= "release_debug"
         if self._SourcesPath is not None     :
             self.buildGodot(self._SourcesPath, extraArgs)
         return
@@ -229,7 +228,7 @@ class GodotEditor    :
         self._Builder = Build(self._EditorPath)
         self._Builder.BuildEditor(Args)
 
-    def __init__(self, Path)    :
+    def __init__(self, Path = None)    :
         super().__init__()
         self._EditorPath = Path
         if Path is None    :
@@ -240,27 +239,69 @@ class GodotEditor    :
 
 class Main      :
     
-    from enum import Enum
-    class Task(Enum)        :
-        Nothing     = 0
-        GetEditor   = 1
-        Build       = 2
-        Run         = 3
 
-    #Path Given to the main
+    class Task()        :
+
+        from enum import Enum
+        class Type(Enum)          :
+            Nothing     = 0
+            GetEditor   = 1
+            Build       = 2
+            Run         = 3
+
+        _Value = Type.Nothing
+
+        def ToString(self)        :
+            switcher = {
+                        Main.Task.Type.Nothing   : "Nothing",
+                        Main.Task.Type.GetEditor : "GetEditor",
+                        Main.Task.Type.Build     : "Build",
+                        Main.Task.Type.Run       : "Run" 
+                        }
+            return switcher.get(self._Value)
+
+        @staticmethod
+        def FromString(String)      :
+            switcher = {
+                        "Nothing"       : Main.Task.Type.Nothing ,
+                        "GetEditor"     : Main.Task.Type.GetEditor,
+                        "Build"         : Main.Task.Type.Build  ,
+                        "Run"           : Main.Task.Type.Run 
+                        }
+            return Main.Task(switcher.get(String))
+
+        def __init__(self, newType)  :
+            super().__init__()
+            self.Set(newType)
+
+        def Get(self)   :
+            return self._Value
+
+        def Set(self, newType)  :
+            self._Value = newType
+
+        def Is(self, compType)  :
+            return (self._Value == compType)
+
+       
+
+    # Path Given to the main
     _ExecPath = None
 
     #Args you want to specify for build
     _ExtraArgs = None
 
     # Tasks
-    _Tasks = [Task.Nothing] 
+    _Tasks = [] 
 
     # Editor to use
     _Editor = None
 
     # Configuration data we should be able to read and write
     _EstragonConfig = None
+
+    # url to use when cloning from github
+    _RepoUrl = None
 
     # Whether we should be debugging or not 
     _debug = False
@@ -274,6 +315,7 @@ class Main      :
         -e  --get_editor                    : get godot editor (download/update will not build)
         -b  --build                         : Build godot
         -a  --extra_args [build_arguments]  : Build arguments
+        -r  --repo                          : url of the godot repository you wanna use
 
         commands can be set in any order
         """
@@ -286,7 +328,7 @@ class Main      :
     def _SaveConfigToFile(self) :
         if self._EstragonConfig is None:
             from os import getcwd
-            self._EstragonConfig = ConfigFile(self.getcwd())
+            self._EstragonConfig = ConfigFile(getcwd())
         if self._ExecPath is not None   :
             self._EstragonConfig.saveValue("Path", str(self._ExecPath))
         if self._ExtraArgs is not None  :
@@ -303,26 +345,29 @@ class Main      :
 
     def _getEditor(self, path) :
         Log("Getting Godot")
-        self._Editor = GodotEditor()
-        self._Editor.InitFromSource(path)
+        self._Editor = GodotEditor(path)
+        if self._RepoUrl is not None :
+            self._Editor.InitFromSource(self._RepoUrl)
+        else                         :
+            self._Editor.InitFromSource()
+
     
     def _build(self, path, args) :
         Log("Building Godot")
         if self._Editor is not None:
-            self._Editor.BuildEditor(_ExtraArgs)
-
-    
+            self._Editor.BuildEditor(args)
 
     def _ParseArgs(self) :
         from sys    import argv      
         from getopt import getopt
         from getopt import GetoptError
         try:   
-            opts, args = getopt(argv[1:], "heba:p:d", ["help","get_editor", "build", "extra_args=","path=", "debug"])
+            opts, args = getopt(argv[1:], "heba:p:dr:", ["help","get_editor", "build", "build_args=","path=", "debug", "repo="])
         except GetoptError:          
-            self._help(2)                               
-        for opt, arg in opts:   
-            print(opt)             
+            self._help(2)
+        Log(opts)
+        Log(args)
+        for opt, arg in opts:               
             if opt in ("-h", "--help"):
                 self._help()
             elif opt == '-d':
@@ -330,26 +375,24 @@ class Main      :
                 debug = True
             elif opt in ("-p", "--path"):
                 self._ExecPath = arg
-            elif opt in ("-a", "--extra_args"):
+            elif opt in ("-a", "--build_args"):
                 self._ExtraArgs = arg
             elif opt in ("-e", "--get_editor"):
-                self._Tasks.append(Main.Task.GetEditor)
+                self._Tasks.append(Main.Task(Main.Task.Type.GetEditor))
             elif opt in ("-b", "--build"):
-                self._Tasks.append(Main.Task.Build)
-        print(self._Tasks)
+                self._Tasks.append(Main.Task(Main.Task.Type.Build))
 
 
     def _DoTask(self)   :
-        print(self._Tasks)
-        if  self._Tasks is None or (len(self._Tasks)== 1 and self._Tasks[0] == Main.Task.Nothing ) :
+        if  self._Tasks is None or (len(self._Tasks)== 1 or self._Tasks[0].Is(Main.Task.Type.Nothing) ) :
             Log(" No task ordered, will no do anything")
             self._help()
             return
-        Gets =  [i for i, x in enumerate(self._Tasks) if x == Main.Task.GetEditor]
+        Gets =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.GetEditor)]
         if len(Gets) >= 1 :
             Log("starting task : get editor")
             self._getEditor(self._ExecPath)
-        Builds =  [i for i, x in enumerate(self._Tasks) if x == Main.Task.Build]
+        Builds =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.Build)]
         if len(Builds) >= 1 :
             Log("starting task : build")
             self._build(self._ExecPath, self._ExtraArgs)
