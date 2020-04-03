@@ -3,263 +3,43 @@
 #   to automate some frequent Godot tasks
 #
 
+#import modules
+from Modules.Estragon_Log           import EstragonLog          as Log
+from Modules.Estragon_Config        import EstragonConfigFile   as ConfigFile
+from Modules.Estragon_GodotEditor   import EstragonGodotEditor  as GodotEditor 
+
+
+#
 class Version   :
+    
+    # Estragon Version
+    VersionNum = 1.1
 
     def __init__(self):
         super().__init__()
-        print("Estragon V1.0")
+        vstr = "Estragon V" + str(self.VersionNum)
+        print(vstr)
+        Log(vstr)
 
-debug = False
-
-#   Class for log, will allow for more custom log
-class EstragonLog   :
-
-    _LogString = str()
-
-    def PrintToLog(self, intext)    :
-        text = str()
-        if isinstance(intext, str)  :
-            text = intext
-        if isinstance(intext, list) :
-            if len(intext) > 0      :
-                if isinstance(intext[0], str)   :
-                    text =  ', '.join(intext)
-        
-        import inspect
-        curframe = inspect.currentframe()
-        calframe = inspect.getouterframes(curframe, 2)
-        global debug
-        if debug :
-            print(str(calframe[1][3]) + " - "+ str(calframe[2][3]) + " : " + text)
-        self._LogString = self._LogString + str(calframe[1][3]) + " - "+ str(calframe[2][3]) + " : " + text + "\n"
-
-
-    def __init__(self)          :
-        super().__init__()
-
-# spawning a Log singleton and declaring its function
-MainLog = EstragonLog()
-def Log(text)   :
-    MainLog.PrintToLog(text)
-
-#   Class for saving estragon preferencies
-class ConfigFile    :
-    # path to the file
-    _configPath = None
-
-    # path to the file
-    _settingsDictionnary = dict()
-
-    #read the dictionnary from an actual file
-    def _ReadFromFile(self) :
-        file_object = open(self._configPath, "r")
-        lines = file_object.readlines()
-        file_object.close()
-        for t in lines	:
-            pair = t.split("=")
-            field = pair[0]
-            value = pair[1]
-            Log("retrieving " + field + " : " + value + " from "  + self._configPath)
-            self._settingsDictionnary[field] = value
-        
-
-    #save the dictionnary to an actual file
-    def _saveToFile(self)   :
-        file_object = open(self._configPath, "w")
-        x = self._settingsDictionnary.items()
-        for t in x	:
-            strln = str(t[0]) + "=" + str(t[1])
-            Log("adding " + strln + " to file " + self._configPath)
-            file_object.write(strln)
-        file_object.close() 
-
-
-    # make sure that the file and the object are in sync
-    def sync(self)  :
-        self._saveToFile()
-        self._ReadFromFile()
-
-    # save a value (new or not) to this file
-    def saveValue (self, field, value)     :
-        if field in self._settingsDictionnary    :
-            Log(("Overriding " + field + " with " + value))
-        else                                :
-            Log(("Adding " + field + " with " + value))
-        ''' actually saving the variable '''
-        self._settingsDictionnary[field] = value 
-        self.sync()
-
-    # save a value (new or not) to this file
-    def getValue (self, field)     :
-        self.sync()
-        return self._settingsDictionnary[field]
-
-    def __init__(self, path):
-        super().__init__()
-        self._configPath = path
-        self.sync()
-
-   
-
-#   Class for godot sources and installation
-class Sources       :
-
-    _branch = "master"  # the installed branch
-    _Path   = None      # the path to the installation
-    _repo   = None
-
-    # gets the path of this repository
-    def getPath(self)   :
-        return self._Path
-
-    # allow to get the current branch we're using
-    def getBranch(self) :
-        return self._branch
-
-    # default initializer should not be called directly
-    def __init__(self):
-        super().__init__()
-
-
-    def _UpdateFromRepo(self)   :
-        from git import Repo
-        if self._repo  is not None:
-            self._Path   = self._repo.working_tree_dir
-            self._branch = self._repo.active_branch
-            self._repo.git.pull()
-            Log(self._repo.git.status())
-
-
-    # static method to get a valid Sources object with a local repository
-    @staticmethod
-    def GetLocalSource( path)    :
-        import os.path
-        from git import Repo
-        retsource = Sources()
-        retsource._repo = Repo(os.path.join(path, 'godot'))
-        retsource._UpdateFromRepo()
-        return retsource
-
-    # static method to get a valid Sources object with a distant repository
-    @staticmethod
-    def GetFromOriginSource(path, originRepo = "https://github.com/godotengine/godot.git")    :
-        import os.path
-        from git import Repo
-        retsource = Sources()
-        retsource._repo = Repo.clone_from(originRepo, os.path.join(path, 'godot'))
-        retsource._UpdateFromRepo()
-        return retsource
-
-    # static method to get a valid Sources object fully automated (will select for you the correct version)
-    @staticmethod
-    def GetGodotSource(path, originRepo = "https://github.com/godotengine/godot.git")   :
-        import os.path 
-        fullpath = os.path.join(path, 'godot')
-        if os.path.isfile(os.path.join(fullpath,"README.md"))   :
-            Log("path already in use, trying to get repo")
-            return Sources.GetLocalSource(path)
-        else                                            :
-            Log("path not in use, cloning repo")
-            return Sources.GetFromOriginSource(path, originRepo)
-        return None
-
-        
-class Build()   :
+# class to handle after program cleaning
+class End :
     
-    # Number of CPU core available
-    _CPUAvailable   = 1
-
-    # Path to Godot sources
-    _SourcesPath     = None
-
-    # Check if we have all necessary Build tools
-    @staticmethod
-    def CheckBuildTools()   :
-        from shutil import which
-        if which("scons") is None:
-            return False
-        from sys import platform
-        if platform.startswith('win'):
-            from os import environ
-            if environ.get('VS140COMNTOOLS') is None :
-                Log("Building on windows without visual studio, not supported by Estragon ")
-                return False
-        return True  
-    
-
-    def buildGodot(self, path, extraArgs) :
-        import time;
-        startTime = time.time()
-        if Build.CheckBuildTools() is False   :
-            return
-        if extraArgs is None    :
-            extraArgs = ''
-        from sys import platform
-        buildplateform = platform
-        if platform.startswith('linux'):
-            buildplateform = "x11"
-        if platform.startswith('win'):
-            buildplateform = "windows"
-        from os import chdir
-        from os import path
-        buildpath = path.join(self._SourcesPath, 'godot')
-        chdir(buildpath)
-        Log("Building godot on path = " + buildpath)
-        cli = "scons " + "-j"+ str(self._CPUAvailable) + " platform=" + buildplateform + " " + extraArgs + " -Q"
-        Log( "Build command  = " + cli)
-        from os import system
-        if platform.startswith('win'):
-            system("powershell" + cli)
-        else:
-            system(cli)
-        endTime = time.time()
-        Log("Scons finished at " + str(endTime))
-        duration = endTime - startTime
-        Log("Build Took :" + str(duration) + "s")
-
-    def __init__(self, path = None)  :
-        super().__init__()
-        from multiprocessing    import cpu_count
-        self._CPUAvailable = cpu_count()
-        self._SourcesPath = path
-
-    def BuildEditor(self, extraArgs = None)    :
-        if self._SourcesPath is not None     :
-            self.buildGodot(self._SourcesPath, extraArgs)
+    # if any cleaning necessary it will happen here
+    def _Clean(self)    :
         return
 
 
-# Class representing the editor
-class GodotEditor    :
-
-    # Path to this Editor
-    _EditorPath = None
-
-    # Access to Code Source
-    _Source = None
-
-    # Access to Build Tool
-    _Builder = None
-
-    def InitFromSource(self, repo = "https://github.com/godotengine/godot.git") :
-        self._Source = Sources.GetGodotSource(self._EditorPath, repo)
-
-    def BuildEditor(self, Args) :
-        self._Builder = Build(self._EditorPath)
-        self._Builder.BuildEditor(Args)
-
-    def __init__(self, Path = None)    :
+    def __init__(self):
         super().__init__()
-        self._EditorPath = Path
-        if Path is None    :
-            from os import getcwd
-            self._EditorPath = getcwd()
+        self._Clean()
+        print("That's all folks !")
 
 
-
+# Main Estragon Class 
 class Main      :
     
 
+    # Class to define program tasks
     class Task()        :
 
         from enum import Enum
@@ -334,7 +114,7 @@ class Main      :
         -p  --path [path_to_godot]          : Specify the path for download/godot sources
         -e  --get_editor                    : get godot editor (download/update will not build)
         -b  --build                         : Build godot
-        -a  --extra_args [build_arguments]  : Build arguments
+        -a  --build_args [build_arguments]  : Build arguments
         -r  --repo                          : url of the godot repository you wanna use
 
         commands can be set in any order
@@ -385,14 +165,13 @@ class Main      :
             opts, args = getopt(argv[1:], "heba:p:dr:", ["help","get_editor", "build", "build_args=","path=", "debug", "repo="])
         except GetoptError:          
             self._help(2)
-        Log(opts)
-        Log(args)
+        Log("opts are " + str(opts))
+        Log("args are " + str(args))
         for opt, arg in opts:               
             if opt in ("-h", "--help"):
                 self._help()
             elif opt == '-d':
-                global debug
-                debug = True
+                Log.EnableDebug(True)
             elif opt in ("-p", "--path"):
                 self._ExecPath = arg
             elif opt in ("-a", "--build_args"):
@@ -420,7 +199,6 @@ class Main      :
             Log("starting task : build")
             self._build(self._ExecPath, self._ExtraArgs)
         
-    
 
     # init the main object
     def __init__(self):
@@ -428,6 +206,7 @@ class Main      :
         Version()
         self._ParseArgs()
         self._DoTask()
+        End()
         return
 
 
