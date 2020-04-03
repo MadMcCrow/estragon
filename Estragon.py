@@ -16,7 +16,15 @@ class EstragonLog   :
 
     _LogString = str()
 
-    def PrintToLog(self, text)  :
+    def PrintToLog(self, intext)    :
+        text = str()
+        if isinstance(intext, str)  :
+            text = intext
+        if isinstance(intext, list) :
+            if len(intext) > 0      :
+                if isinstance(intext[0], str)   :
+                    text =  ', '.join(intext)
+        
         import inspect
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
@@ -180,6 +188,10 @@ class Build()   :
     
     @staticmethod
     def buildGodot(path, extraArgs) :
+        import time;
+        startTime = time.time()
+        if Build.CheckBuildTools() is False   :
+            return
         if extraArgs is None    :
             extraArgs = ''
         from sys import platform
@@ -188,6 +200,9 @@ class Build()   :
             buildplateform = "x11"
         if platform.startswith('win'):
             buildplateform = "windows"
+        from os import chdir
+        from os import path as ospath
+        chdir(ospath.join(path, 'godot'))
         cli = "scons platform=" + buildplateform + " " + extraArgs
         Log( "Build command  = " + cli)
         from os import system
@@ -195,7 +210,10 @@ class Build()   :
             system("powershell" + cli)
         else:
             system(cli)
-        Log( "Scons finished ")
+        endTime = time.time()
+        Log("Scons finished at endTime")
+        duration = endTime - startTime
+        Log("Build Took :" + duration + "s")
 
     def __init__(self, path = None)  :
         super().__init__()
@@ -379,13 +397,16 @@ class Main      :
                 self._ExtraArgs = arg
             elif opt in ("-e", "--get_editor"):
                 self._Tasks.append(Main.Task(Main.Task.Type.GetEditor))
+            elif opt in ("-r", "--repo"):
+                self._RepoUrl = arg
             elif opt in ("-b", "--build"):
                 self._Tasks.append(Main.Task(Main.Task.Type.Build))
 
 
     def _DoTask(self)   :
-        if  self._Tasks is None or (len(self._Tasks)== 1 or self._Tasks[0].Is(Main.Task.Type.Nothing) ) :
-            Log(" No task ordered, will no do anything")
+
+        if  self._Tasks is None or (len(self._Tasks) <= 0 or self._Tasks[0].Is(Main.Task.Type.Nothing) ) :
+            Log(" No task ordered, will not do anything")
             self._help()
             return
         Gets =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.GetEditor)]
