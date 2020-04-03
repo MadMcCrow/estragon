@@ -14,10 +14,11 @@ class Version   :
     
     # Estragon Version
     VersionNum = 1.1
+    Appendix   = "dev"
 
     def __init__(self):
         super().__init__()
-        vstr = "Estragon V" + str(self.VersionNum)
+        vstr = "Estragon V" + str(self.VersionNum) + str(appendix)
         print(vstr)
         Log(vstr)
 
