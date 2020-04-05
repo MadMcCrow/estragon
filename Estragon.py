@@ -118,6 +118,8 @@ class Main      :
         -a  --build_args [build_arguments]  : Build arguments
         -r  --repo                          : url of the godot repository you wanna use
 
+        --branch                            : The godot branch you're interested in (defaults to master)
+
         commands can be set in any order
         """
         if reason != 0  :
