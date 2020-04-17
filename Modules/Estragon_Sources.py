@@ -60,12 +60,12 @@ class Sources       :
                             # init our repo
                             self._repo = temprepo
                             self._OriginUrl = repoOriginUrl
-                            self._branch = temprepo.head.reference.name
+                            self._branch = temprepo.active_branch
                             return True
                     else    :
                         Log("Warning local repo has no remote origin" )
                         self._repo = temprepo
-                        self._branch = temprepo.head.reference.name
+                        self._branch = temprepo.active_branch
                         return False
                 else    :
                     Log("Error this path is not a git repository")
@@ -74,26 +74,45 @@ class Sources       :
                # Repository is empty
                Log("Error this path is not a git repository")
                return False
-            
-
-    # default initializer should not be called directly
-    def __init__(self, Path = None, Origin = None, Branch = None):
-        super().__init__()
-        if Branch is not None :
-            self._branch = Branch
-        if Origin is not None :
-            self._OriginUrl = None
-        if Path is not None :
-            self._Path   = None
 
 
-    def _UpdateFromRepo(self)   :
+    def _clone(self, localPath, cloneURL)   :
         from git import Repo
+        from os.path import join as mkpath
+        self._repo = Repo.clone_from(cloneURL, mkpath(localPath))
         if self._repo  is not None:
             self._Path   = self._repo.working_tree_dir
             self._branch = self._repo.active_branch
             self._repo.git.pull()
             Log(self._repo.git.status())
+        else    :
+            Log("Errors while cloning, cloning failed")
+            
+
+    # default initializer will not create a valid repo.
+    def __init__(self, localPath = None, cloneURL = None):
+        super().__init__()
+        if localPath is not None and cloneURL is not None :
+            self._clone(localPath, cloneURL)
+
+    # get a list of Branches, useful for checkout branches
+    def listBranches(self)  :
+        if self._repo is not None    :
+            from git import Repo
+            return self._repo.branches
+        return []
+
+    def checkoutBranch(self, branch)  :
+        if branch is not None   :
+            branches = self.listBranches() 
+            if branch in branches    :
+                self._repo.git.checkout(branch.name)
+            else :
+                self._repo.git.checkout('-b', branch)
+
+
+
+            
 
 
 
@@ -102,14 +121,12 @@ class Sources       :
 # class representing Godot Sources
 class GodotSources(Sources) :
 
-        # static method to get a valid Sources object with a distant repository
+    _origin = "https://github.com/godotengine/godot.git"
+
+
     @staticmethod
-    def GetFromOriginSource(path, originRepo = "https://github.com/godotengine/godot.git")    :
-        import os.path
-        from git import Repo
-        retsource = Sources()
-        retsource._repo = Repo.clone_from(originRepo, os.path.join(path, 'godot'))
-        retsource._UpdateFromRepo()
+    def GetFromOrigin(path, originRepo = "https://github.com/godotengine/godot.git")    :
+        retsource = Sources(path, originRepo)
         return retsource
 
     # static method to get a valid Sources object fully automated (will select for you the correct version)
@@ -122,7 +139,7 @@ class GodotSources(Sources) :
             return GodotSources.GetLocalSource(path)
         else                                            :
             Log("path not in use, cloning repo")
-            return GodotSources.GetFromOriginSource(path, originRepo)
+            return GodotSources.GetFromOrigin(path, originRepo)
         return None
 
 
@@ -132,6 +149,6 @@ class GodotSources(Sources) :
         import os.path
         from git import Repo
         retsource = Sources()
-        retsource._repo = Repo(os.path.join(path, 'godot'))
-        retsource._UpdateFromRepo()
+        retsource._Path = os.path.join(path, 'godot')
+        retsource._initFromPath()
         return retsource
