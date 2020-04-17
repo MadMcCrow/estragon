@@ -1,3 +1,3 @@
-[submodule "Modules/Interactive/Menus/Question"]
-	path = Modules/Interactive/Menus/Question
+[submodule "Modules/Interactive/Question"]
+	path = Modules/Interactive/Question
 	url = https://github.com/MadMcCrow/Question.git
