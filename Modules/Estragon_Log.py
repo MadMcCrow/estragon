@@ -41,7 +41,9 @@ class EstragonLog(object)   :
 
         # write entire log to file
         def WriteToFile(self, logfilepath)    :
-            return NotImplemented
+            raise NotImplementedError
+
+
 
     #instance of singleton
     instance = None
@@ -63,5 +65,9 @@ class EstragonLog(object)   :
     def IsDebug()   :
         return EstragonLog.instance.debug is True
 
+
+    @staticmethod
+    def GetLog()    :
+        return EstragonLog.instance
     
     

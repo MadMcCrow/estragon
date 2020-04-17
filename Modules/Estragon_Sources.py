@@ -34,9 +34,7 @@ class Sources       :
         except FileNotFoundError    :
             Log("Directory " + self._Path + " failed to create folder")
             return False
-        
-        #TODO : improve that if Else logic
-
+            
         # we now have a folder.
         from os import listdir
         # not not enable turning list dir into a boolean
@@ -45,48 +43,42 @@ class Sources       :
             from os import path
             from git import Repo
             temprepo = Repo(path.join(self._Path))
+            try :
             # it's an actual repo
-            if not temprepo.bare       :
+                assert not temprepo.bare      
                 # we have a valid repository
-                if temprepo.remotes.count > 0 :
-                    Log("Checking git config to get first remote url")
-                    repoOriginUrl = temprepo.git.config('--get', 'remote.%s.url' % temprepo.remotes)
-                    if self._OriginUrl is not None:
-                        # comppare it and throw an error if it's not the same
-                        if self._OriginUrl != repoOriginUrl :
-                            Log("Error : Repo is not the same origin, please fix using git and come back later" )
-                            return False
-                        else                            :
-                            # init our repo
-                            self._repo = temprepo
-                            self._OriginUrl = repoOriginUrl
-                            self._branch = temprepo.active_branch
-                            return True
-                    else    :
-                        Log("Warning local repo has no remote origin" )
+                assert temprepo.remotes.count > 0 
+                Log("Checking git config to get first remote url")
+                repoOriginUrl = temprepo.git.config('--get', 'remote.%s.url' % temprepo.remotes)
+                assert self._OriginUrl is not None
+                # comppare it and throw an error if it's not the same
+                assert self._OriginUrl != repoOriginUrl
+                # init our repo
+                self._repo = temprepo
+                self._OriginUrl = repoOriginUrl
+                self._branch = temprepo.active_branch
+                return True            
+            except AssertionError:
+                    Log("Warning local repo failed to init properly" )
+                    try :
+                        assert not temprepo.bare 
                         self._repo = temprepo
                         self._branch = temprepo.active_branch
+                        return True
+                    except AssertionError:
                         return False
-                else    :
-                    Log("Error this path is not a git repository")
-                    return False
-            else    :
-               # Repository is empty
-               Log("Error this path is not a git repository")
-               return False
 
-
+    #clone from 
     def _clone(self, localPath, cloneURL)   :
         from git import Repo
         from os.path import join as mkpath
         self._repo = Repo.clone_from(cloneURL, mkpath(localPath))
-        if self._repo  is not None:
-            self._Path   = self._repo.working_tree_dir
-            self._branch = self._repo.active_branch
-            self._repo.git.pull()
-            Log(self._repo.git.status())
-        else    :
-            Log("Errors while cloning, cloning failed")
+        assert self._repo  is not None
+        self._Path   = self._repo.working_tree_dir
+        self._branch = self._repo.active_branch
+        self._repo.git.pull()
+        Log(self._repo.git.status())
+
             
 
     # default initializer will not create a valid repo.
@@ -97,18 +89,20 @@ class Sources       :
 
     # get a list of Branches, useful for checkout branches
     def listBranches(self)  :
-        if self._repo is not None    :
-            from git import Repo
-            return self._repo.branches
-        return []
+        assert self._repo is not None
+        from git import Repo
+        return self._repo.branches
 
     def checkoutBranch(self, branch)  :
-        if branch is not None   :
+        try :
+            assert branch is not None
             branches = self.listBranches() 
             if branch in branches    :
                 self._repo.git.checkout(branch.name)
             else :
                 self._repo.git.checkout('-b', branch)
+        except AssertionError:
+            Log("Error, given branch is invalid" )
 
 
 

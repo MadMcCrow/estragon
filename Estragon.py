@@ -9,18 +9,28 @@ from Modules.Estragon_Config        import EstragonConfigFile   as ConfigFile
 from Modules.Estragon_GodotEditor   import EstragonGodotEditor  as GodotEditor 
 
 
-#
 class Version   :
     
     # Estragon Version
     VersionNum = 1.1
-    Appendix   = "dev"
+    Appendix = str()
 
     def __init__(self):
         super().__init__()
-        vstr = "Estragon V" + str(self.VersionNum) + str(appendix)
-        print(vstr)
-        Log(vstr)
+        try :
+            from os import getcwd
+            from os import path
+            from git import Repo
+            temprepo = Repo(path.join(getcwd()))
+            assert not temprepo.bare      
+        except AssertionError  :
+            Log("Running a non-git version")
+        else    :
+            self.Appendix = temprepo.active_branch
+        finally :
+            vstr = "Estragon V" + str(self.VersionNum) + str(self.Appendix)
+            print(vstr)
+            Log(vstr)
 
 # class to handle after program cleaning
 class End :
@@ -29,62 +39,37 @@ class End :
     def _Clean(self)    :
         return
 
-
     def __init__(self):
         super().__init__()
         self._Clean()
         print("That's all folks !")
 
+class _EnumValue()    :
+
+    __name__ = "TEST"
+    def __repr__(self) :
+        return "salut"
+
+    def __str__(self) :
+        return "salut"
+
 
 # Main Estragon Class 
 class Main      :
     
+    class EstragonError(Exception) :
+        pass
 
     # Class to define program tasks
-    class Task()        :
+    from enum import Enum
+    class Task(Enum)  :
+        Nothing     = 0
+        GetEditor   = 1
+        Build       = 2
+        Run         = 3
+        Interactive = 4
+        
 
-        from enum import Enum
-        class Type(Enum)          :
-            Nothing     = 0
-            GetEditor   = 1
-            Build       = 2
-            Run         = 3
-
-        _Value = Type.Nothing
-
-        def ToString(self)        :
-            switcher = {
-                        Main.Task.Type.Nothing   : "Nothing",
-                        Main.Task.Type.GetEditor : "GetEditor",
-                        Main.Task.Type.Build     : "Build",
-                        Main.Task.Type.Run       : "Run" 
-                        }
-            return switcher.get(self._Value)
-
-        @staticmethod
-        def FromString(String)      :
-            switcher = {
-                        "Nothing"       : Main.Task.Type.Nothing ,
-                        "GetEditor"     : Main.Task.Type.GetEditor,
-                        "Build"         : Main.Task.Type.Build  ,
-                        "Run"           : Main.Task.Type.Run 
-                        }
-            return Main.Task(switcher.get(String))
-
-        def __init__(self, newType)  :
-            super().__init__()
-            self.Set(newType)
-
-        def Get(self)   :
-            return self._Value
-
-        def Set(self, newType)  :
-            self._Value = newType
-
-        def Is(self, compType)  :
-            return (self._Value == compType)
-
-       
 
     # Path Given to the main
     _ExecPath = None
@@ -107,8 +92,7 @@ class Main      :
     # Whether we should be debugging or not 
     _debug = False
 
-    def _help(self, reason = 0)  :
-        from sys import exit    
+    def _help(self)  :
         helptext = """Usage : Estragon [options]
 
         Available commands : 
@@ -117,15 +101,10 @@ class Main      :
         -b  --build                         : Build godot
         -a  --build_args [build_arguments]  : Build arguments
         -r  --repo                          : url of the godot repository you wanna use
-
-        --branch                            : The godot branch you're interested in (defaults to master)
-
+        -i  --interactive                   : run interactively to have more functions
         commands can be set in any order
         """
-        if reason != 0  :
-            print("you have to specify arguments for Estragon \n")
         print(helptext)
-        exit(reason)
 
 
     def _SaveConfigToFile(self) :
@@ -138,40 +117,54 @@ class Main      :
             self._EstragonConfig.saveValue("ExtraArgs", str(self._ExtraArgs))
         
     def _LoadFromConfig(self, pathToConfig):
-            if self._EstragonConfig is not None:
-                if self._ExtraArgs is not None :
-                    Log("overriding Extra Args ")
+            try:
+                assert self._EstragonConfig is not None
+                assert self._ExtraArgs is None
+                assert self._ExecPath is None
                 self._ExtraArgs = self._EstragonConfig.getValue("ExtraArgs")
-                if self._ExecPath is not None :
-                    Log("overriding Exec path ")
                 self._ExecPath = self._EstragonConfig.getValue("Path")
+            except AssertionError :
+                Log("Error occurs when trying to load from config")
 
-    def _getEditor(self, path) :
+    def _getEditor(self, path, branch = None) :
         Log("Getting Godot")
         self._Editor = GodotEditor(path)
-        if self._RepoUrl is not None :
+        try :
+            assert self._RepoUrl is not None
             self._Editor.InitFromSource(self._RepoUrl)
-        else                         :
+        except AssertionError   :                        
             self._Editor.InitFromSource()
 
-    
+    def _runInteractive(self) :
+            from Modules.Estragon_Interactive import StartInteractive
+            print("the interactive mode is not working yet : ")
+            StartInteractive()
+
     def _build(self, path, args) :
         Log("Building Godot")
         if self._Editor is not None:
             self._Editor.BuildEditor(args)
 
     def _ParseArgs(self) :
+
         from sys    import argv      
         from getopt import getopt
         from getopt import GetoptError
         try:   
-            opts, args = getopt(argv[1:], "heba:p:dr:", ["help","get_editor", "build", "build_args=","path=", "debug", "repo="])
-        except GetoptError:          
-            self._help(2)
+            opts, args = getopt(argv[1:], "iheba:p:dr:", ["interactive", "help","get_editor", "build", "build_args=","path=", "debug", "repo="])
+        except GetoptError:         
+            self._help()
+            raise Main.EstragonError()
         Log("opts are " + str(opts))
         Log("args are " + str(args))
-        for opt, arg in opts:               
-            if opt in ("-h", "--help"):
+        for opt, arg in opts:      
+            if opt in ('-i', "--interactive"):
+                # ignore all tasks
+                print(Main.Task.Interactive)
+                self._Tasks = []
+                self._Tasks.append(Main.Task(Main.Task.Interactive))
+                break
+            elif opt in ("-h", "--help"):
                 self._help()
             elif opt == '-d':
                 Log.EnableDebug(True)
@@ -180,37 +173,52 @@ class Main      :
             elif opt in ("-a", "--build_args"):
                 self._ExtraArgs = arg
             elif opt in ("-e", "--get_editor"):
-                self._Tasks.append(Main.Task(Main.Task.Type.GetEditor))
+                self._Tasks.append(Main.Task(Main.Task.GetEditor))
             elif opt in ("-r", "--repo"):
                 self._RepoUrl = arg
             elif opt in ("-b", "--build"):
-                self._Tasks.append(Main.Task(Main.Task.Type.Build))
+                self._Tasks.append(Main.Task(Main.Task.Build))
 
 
     def _DoTask(self)   :
-
-        if  self._Tasks is None or (len(self._Tasks) <= 0 or self._Tasks[0].Is(Main.Task.Type.Nothing) ) :
-            Log(" No task ordered, will not do anything")
+        try :
+            assert self._Tasks is not None
+            assert len(self._Tasks) > 0
+        except AssertionError   :
+            Log("no task ordered, will not do anything")
             self._help()
-            return
-        Gets =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.GetEditor)]
-        if len(Gets) >= 1 :
-            Log("starting task : get editor")
-            self._getEditor(self._ExecPath)
-        Builds =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.Build)]
-        if len(Builds) >= 1 :
-            Log("starting task : build")
-            self._build(self._ExecPath, self._ExtraArgs)
+            raise Main.EstragonError()
+        else :
+            # interactives =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.Interactive)]
+            if Main.Task.Interactive in self._Tasks    :
+                Log("starting task : interactive")
+                self._runInteractive()
+                return
+            # Gets =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.GetEditor)]
+            if Main.Task.GetEditor in self._Tasks    :
+                Log("starting task : get editor")
+                self._getEditor(self._ExecPath)
+                return
+            #Builds =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.Build)]
+            if Main.Task.Build in self._Tasks    :
+                Log("starting task : build")
+                self._build(self._ExecPath, self._ExtraArgs)
         
 
     # init the main object
     def __init__(self):
         super().__init__()
         Version()
-        self._ParseArgs()
-        self._DoTask()
-        End()
-        return
+        try:
+            self._ParseArgs()
+            self._DoTask()
+        except Exception as err:
+            Log("Error occured when running Estragon")
+            print(str(Log.GetLog()))
+            print(err)
+            raise
+        finally :
+            End()
 
 
 # launch Estragon               

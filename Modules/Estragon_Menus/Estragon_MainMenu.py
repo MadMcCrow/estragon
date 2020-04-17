@@ -1,6 +1,6 @@
 # Main Menu classes for estragon
 
-from Estragon_Interactive import EstragonMenu
+from .Estragon_Base import EstragonMenu
 
 # Main menu class 
 class MainMenu(EstragonMenu)  :
@@ -8,3 +8,5 @@ class MainMenu(EstragonMenu)  :
     def __init__(self)  :
         super.__init__()
         raise NotImplementedError
+
+
