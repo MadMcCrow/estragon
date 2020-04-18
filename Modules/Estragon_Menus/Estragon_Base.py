@@ -6,36 +6,32 @@ from .Question.Question_Prompt   import Prompt
 # implements Estragon Specific feature to overload Question features
 class EstragonMenu(Menu)  :
     
-    class Submenus(Menu.Answer)  :
-        def __init__(self, displayText):
-            super().__init__()
-            self._Text = str(displayText)
-    
     Texts = list()
 
-    class Test() :
-        def getstr(self) :
-            return str("OK" + str(self))
+    def ChoicesTextsFactory(self)  :
+        return ["ok"]
+
+    def ApplyChoices(self, idx)  :
+        raise NotImplementedError
 
     def makeDisplayTexts(self) :
-        self._PossibleAnwsers = list()
-        if len(self.Texts) > 0 :
-            for t in self.Texts:
-                ans = Menu.Answer(EstragonMenu.Test())
-                self._PossibleAnwsers.insert(ans)
-        else :
-            ans = Menu.Answer(EstragonMenu.Test())
-            #ans = EstragonMenu.Submenus("OK" + str(self))
-            self._PossibleAnwsers.insert(ans)
+        assert len(self.Texts) > 0
+        self.setAvailableAnswers(self.Texts)
     
     def __int__(self)   :  
         return self.getSelectedIdx()
 
     def __init__(self, MenuName):
-        title = "Estragon : "+ str(MenuName)
-        super().__init__(title)
-        self._MenuSize = 45
-        self.ask()
+        try :
+            self.Texts = self.ChoicesTextsFactory()
+            title = "Estragon : "+ str(MenuName)
+            super().__init__(title)
+            self.makeDisplayTexts()
+            self._MenuSize = 45
+            self.ask()
+            self.ApplyChoices(self.getChoiceIdx())
+        except NotImplementedError:
+            pass
 
 # Main class for describing a menu
 # implements Estragon Specific feature to overload Question features

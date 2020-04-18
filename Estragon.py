@@ -212,10 +212,11 @@ class Estragon      :
         try:
             self._ParseArgs()
             self._DoTask()
-        except Estragon.Error as err:
+        except Exception as err:
             Log("Error occured when running Estragon")
             print(str(Log.GetLog()))
             print(err)
+            raise
         finally :
             End()
 
