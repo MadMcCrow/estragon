@@ -8,29 +8,33 @@ class EstragonMenu(Menu)  :
     
     class Submenus(Menu.Answer)  :
         def __init__(self, displayText):
-            # ignore anwser init, we're gonna simplify it all
-            object.__init__(self)
+            super().__init__()
             self._Text = str(displayText)
     
     Texts = list()
 
+    class Test() :
+        def getstr(self) :
+            return str("OK" + str(self))
+
     def makeDisplayTexts(self) :
+        self._PossibleAnwsers = list()
         if len(self.Texts) > 0 :
             for t in self.Texts:
-                ans = EstragonMenu.Submenus(t)
-                self.addPossibleAnwser(ans)
+                ans = Menu.Answer(EstragonMenu.Test())
+                self._PossibleAnwsers.insert(ans)
         else :
-            ans = EstragonMenu.Submenus("OK")
-            self.addPossibleAnwser(ans)
+            ans = Menu.Answer(EstragonMenu.Test())
+            #ans = EstragonMenu.Submenus("OK" + str(self))
+            self._PossibleAnwsers.insert(ans)
     
-    def __int__(self)   :
+    def __int__(self)   :  
         return self.getSelectedIdx()
 
     def __init__(self, MenuName):
         title = "Estragon : "+ str(MenuName)
         super().__init__(title)
         self._MenuSize = 45
-        self.makeDisplayTexts()
         self.ask()
 
 # Main class for describing a menu

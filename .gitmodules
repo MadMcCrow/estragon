@@ -1,3 +1,4 @@
 [submodule "Modules/Estragon_Menus/Question"]
 	path = Modules/Estragon_Menus/Question
 	url = https://github.com/MadMcCrow/Question.git
+	branch = master

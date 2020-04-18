@@ -6,7 +6,7 @@ from .Estragon_Base import EstragonMenu
 class MainMenu(EstragonMenu)  :
   
     def __init__(self)  :
-        super.__init__()
+        super().__init__("Main Menu")
         raise NotImplementedError
 
 

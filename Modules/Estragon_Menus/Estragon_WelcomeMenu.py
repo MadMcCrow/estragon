@@ -6,12 +6,12 @@ from .Estragon_Base import EstragonMenu
 class WelcomeMenu(EstragonMenu)  :
     
     def __init__(self)  :
-        super.__init__("Welcome to Estragon")
+        super().__init__("Welcome to Estragon")
 
 
 # Goodbye menu class 
 class GoodbyeMenu(EstragonMenu)  :
     
     def __init__(self)  :
-         super.__init__("Estragon will exit now")
+         super().__init__("Estragon will exit now")
 

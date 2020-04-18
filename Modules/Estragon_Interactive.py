@@ -13,14 +13,14 @@ class StartInteractive(object)  :
                 from .Estragon_Menus.Estragon_WelcomeMenu import WelcomeMenu
                 from .Estragon_Menus.Estragon_MainMenu    import MainMenu 
                 # say hello
-                WelcomeMenu()
+                A = WelcomeMenu()
+                B = WelcomeMenu()
                 #start
-                MainMenu()
+                B = MainMenu()
                 #say goodbye
-                GoodbyeMenu()
+                C = GoodbyeMenu()
             except NotImplementedError as err:
-                print("the interactive mode is not working yet : ", err)
-                raise
+                Log("interactiveMode not implemented " + str(err))
             finally:
                 del self
 

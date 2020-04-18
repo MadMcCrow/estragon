@@ -55,9 +55,10 @@ class _EnumValue()    :
 
 
 # Main Estragon Class 
-class Main      :
+class Estragon      :
     
-    class EstragonError(Exception) :
+    # is defined as Estragon.Error 
+    class Error(Exception) :
         pass
 
     # Class to define program tasks
@@ -137,7 +138,6 @@ class Main      :
 
     def _runInteractive(self) :
             from Modules.Estragon_Interactive import StartInteractive
-            print("the interactive mode is not working yet : ")
             StartInteractive()
 
     def _build(self, path, args) :
@@ -150,19 +150,21 @@ class Main      :
         from sys    import argv      
         from getopt import getopt
         from getopt import GetoptError
+        # alias for easier read
+        Task = Estragon.Task
+
         try:   
             opts, args = getopt(argv[1:], "iheba:p:dr:", ["interactive", "help","get_editor", "build", "build_args=","path=", "debug", "repo="])
         except GetoptError:         
             self._help()
-            raise Main.EstragonError()
+            raise Estragon.Error()
         Log("opts are " + str(opts))
         Log("args are " + str(args))
         for opt, arg in opts:      
             if opt in ('-i', "--interactive"):
-                # ignore all tasks
-                print(Main.Task.Interactive)
+                # ignore all other tasks
                 self._Tasks = []
-                self._Tasks.append(Main.Task(Main.Task.Interactive))
+                self._Tasks.append(Task.Interactive)
                 break
             elif opt in ("-h", "--help"):
                 self._help()
@@ -173,34 +175,32 @@ class Main      :
             elif opt in ("-a", "--build_args"):
                 self._ExtraArgs = arg
             elif opt in ("-e", "--get_editor"):
-                self._Tasks.append(Main.Task(Main.Task.GetEditor))
+                self._Tasks.append(Task.GetEditor)
             elif opt in ("-r", "--repo"):
                 self._RepoUrl = arg
             elif opt in ("-b", "--build"):
-                self._Tasks.append(Main.Task(Main.Task.Build))
+                self._Tasks.append(Task.Build)
 
 
     def _DoTask(self)   :
+        Task = Estragon.Task
         try :
             assert self._Tasks is not None
             assert len(self._Tasks) > 0
         except AssertionError   :
+            print("No command specified, please see help")
             Log("no task ordered, will not do anything")
             self._help()
-            raise Main.EstragonError()
         else :
-            # interactives =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.Interactive)]
-            if Main.Task.Interactive in self._Tasks    :
+            if Task.Interactive in self._Tasks    :
                 Log("starting task : interactive")
                 self._runInteractive()
                 return
-            # Gets =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.GetEditor)]
-            if Main.Task.GetEditor in self._Tasks    :
+            if Task.GetEditor in self._Tasks    :
                 Log("starting task : get editor")
                 self._getEditor(self._ExecPath)
                 return
-            #Builds =  [i for i, x in enumerate(self._Tasks) if x.Is(Main.Task.Type.Build)]
-            if Main.Task.Build in self._Tasks    :
+            if Task.Build in self._Tasks    :
                 Log("starting task : build")
                 self._build(self._ExecPath, self._ExtraArgs)
         
@@ -212,15 +212,14 @@ class Main      :
         try:
             self._ParseArgs()
             self._DoTask()
-        except Exception as err:
+        except Estragon.Error as err:
             Log("Error occured when running Estragon")
             print(str(Log.GetLog()))
             print(err)
-            raise
         finally :
             End()
 
 
 # launch Estragon               
-Estragon = Main()
+Main = Estragon()
 
