@@ -1,8 +1,13 @@
-#   Class for log, will allow for more custom log
-class EstragonLog(object)   :
+#Copyright (c) 2020 Noé Perard-Gayot. All rights reserved.
+# This work is licensed under the terms of the MIT license. 
+# For a copy, see <https://opensource.org/licenses/MIT>.
+
+# A nice log that behave as a singleton.
+# Allows you to store debug info and display them if an error occurs at some point
+class log(object)   :
 
     #inner singleton class
-    class __EstragonLog:
+    class __estragonLog:
 
         # the enitre log string. 
         _LogString = str()
@@ -19,7 +24,7 @@ class EstragonLog(object)   :
             return self._LogString
 
         # actual method called on init
-        def PrintToLog(self, intext)    :
+        def printToLog(self, intext)    :
             text = str(intext)
             import inspect
             curframe = inspect.currentframe()
@@ -41,27 +46,33 @@ class EstragonLog(object)   :
 
         # write entire log to file
         def WriteToFile(self, logfilepath)    :
-            return NotImplemented
+            raise NotImplementedError
+
+
 
     #instance of singleton
     instance = None
 
-    # call to Log()
+    # call to log()
     def __init__(self, arg):
-        if not EstragonLog.instance:
-            EstragonLog.instance = EstragonLog.__EstragonLog()
-        EstragonLog.instance.PrintToLog(arg)
+        if not log.instance:
+            log.instance = log.__estragonLog()
+        log.instance.printToLog(arg)
 
     #def __getattr__(self, name):
     #   return getattr(self.instance, name)
 
     @staticmethod
-    def EnableDebug(Enable = True)   :
-        EstragonLog.instance.debug = Enable
+    def enableDebug(Enable = True)   :
+        log.instance.debug = Enable
 
     @staticmethod
-    def IsDebug()   :
-        return EstragonLog.instance.debug is True
+    def isDebug()   :
+        return log.instance.debug is True
 
+
+    @staticmethod
+    def getLog()    :
+        return log.instance
     
     
