@@ -38,24 +38,25 @@ class build_godot()   :
 
     _plateform = "x11" if platform.startswith('linux') else ("windows" if platform.startswith('win')  else None)
 
-    def _build(self, extraArgs) :
-        log("a", "b", "c")
+    def _build(self, extraArgs : str = str()) :
         log("checking requisites :" ,self._SourcesPath, self._llvm, self._scons, self._plateform)
         assert path.exists(self._SourcesPath)
-        assert self._llvm
         assert self._scons
         assert self._plateform is not None
         #avoid null argument
-        if extraArgs is None    :
-            extraArgs = ''
 
         #look for the correct path
-
         chdir(self._SourcesPath)
         log("Building godot on path = ", self._SourcesPath)
 
         # building the command line
-        cli = "scons " + "-j"+ str(self._CPUAvailable) + " platform=" + self._plateform + " " + extraArgs + " -Q"
+        llvm        = "".join(["llvm=",("yes" if self._llvm else "no")])
+        threads     = "".join(["-j",str(self._CPUAvailable)])
+        plateform   = "".join(["platform=" + self._plateform])
+
+
+        
+        cli = " ".join(["scons", threads, plateform, llvm, extraArgs,"-Q"])
         log( "Build command  = ", cli)
 
         # time stamping
@@ -64,7 +65,7 @@ class build_godot()   :
  
         # for windows be sure to launch command in powershell, not CMD
         if platform.startswith('win')   :
-           cli = "powershell" + cli
+           cli = " ".join(["powershell" ,cli])
 
         # launching scons
         # asking the system to run the command
@@ -101,7 +102,7 @@ if __name__ == "__main__":
     from sys import argv
     try:
         builder = build_godot(argv[1], True)
-        builder.BuildEditor()
+        builder.BuildEditor(argv[2:])
     except Exception:
         print ("an error occured, printing log : ")
         print(log.getLog())
