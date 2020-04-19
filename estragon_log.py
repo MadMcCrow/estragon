@@ -24,8 +24,14 @@ class log(object)   :
             return self._LogString
 
         # actual method called on init
-        def printToLog(self, intext)    :
-            text = str(intext)
+        def printToLog(self, *intexts)    :
+            # formating variadic
+            text = str()
+            itemlist = list(*intexts)
+            for t in itemlist   :
+                text += str(t) + " "
+            
+            # getting context :
             import inspect
             curframe = inspect.currentframe()
             calframe = inspect.getouterframes(curframe, 2)
@@ -54,7 +60,7 @@ class log(object)   :
     instance = None
 
     # call to log()
-    def __init__(self, arg):
+    def __init__(self, *arg):
         if not log.instance:
             log.instance = log.__estragonLog()
         log.instance.printToLog(arg)
