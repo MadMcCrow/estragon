@@ -1,6 +1,6 @@
 # Main Menu classes for estragon
-
-from .Estragon_Base import EstragonMenu
+from Estragon_Log import EstragonLog as Log
+from Estragon_Base import EstragonMenu
 
 # Main menu class 
 class MainMenu(EstragonMenu)  :
@@ -11,7 +11,12 @@ class MainMenu(EstragonMenu)  :
 
     @staticmethod
     def DownloadEditor()    :
-        raise NotImplementedError
+        try:
+            from Estragon_GetEditorMenu import GetEditorMenu
+            GetEditorMenu()
+        except Exception    :
+            Log("failed to use get Editor Menu")
+            raise
 
     @staticmethod
     def InitLocalRepo()     :
@@ -30,7 +35,8 @@ class MainMenu(EstragonMenu)  :
         return [A,B,C]
 
     def ApplyChoices(self, idx)  :
-        assert idx in range(0,2)
+        Log("idx is " + str(idx))
+        assert self.isValidChoice()
         if idx == 0     :
             MainMenu.DownloadEditor()
         elif idx == 1   :

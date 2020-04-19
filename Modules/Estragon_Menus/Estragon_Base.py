@@ -1,6 +1,7 @@
 # Main Menu classes for estragon
-from .Question.Question_Menu     import Menu
-from .Question.Question_Prompt   import Prompt
+from Question.Question_Menu     import Menu
+from Question.Question_Prompt   import Prompt
+from Estragon_Log import EstragonLog as Log
 
 # Main class for describing a menu
 # implements Estragon Specific feature to overload Question features
@@ -23,12 +24,12 @@ class EstragonMenu(Menu)  :
 
     def __init__(self, MenuName):
         try :
+            Log("starting menu " + str(MenuName))
             self.Texts = self.ChoicesTextsFactory()
             title = "Estragon : "+ str(MenuName)
             super().__init__(title)
             self.makeDisplayTexts()
-            self._MenuSize = 45
-            self.ask()
+            self._MenuSize = 55
             self.ApplyChoices(self.getChoiceIdx())
         except NotImplementedError:
             pass
@@ -37,13 +38,22 @@ class EstragonMenu(Menu)  :
 # implements Estragon Specific feature to overload Question features
 class EstragonPrompt(Prompt)  :
 
-    def __init__(self, MenuName):
+    def initString(self)    :
+        return str()
+
+    def __init__(self, MenuName, initstr = None):
         title = "Estragon : "+ str(MenuName)
         super().__init__(title)
-        self._MenuSize = 45
-        self.ask()
+        if initstr is None:
+            self._UserString = self.initString()
+        elif isinstance(initstr, str)    :
+            self._UserString = initstr
+        self._MenuSize = 55
    
     def __str__(self)   :
         return self.gatherString()
+
+    def recall(self)    :
+
 
 
