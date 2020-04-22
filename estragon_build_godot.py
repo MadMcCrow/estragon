@@ -53,9 +53,12 @@ class build_godot()   :
         llvm        = "".join(["llvm=",("yes" if self._llvm else "no")])
         threads     = "".join(["-j",str(self._CPUAvailable)])
         plateform   = "".join(["platform=" + self._plateform])
-
-
         
+        try :
+            extraArgs = " ".join(extraArgs)
+        except TypeError :
+            extraArgs = ""
+
         cli = " ".join(["scons", threads, plateform, llvm, extraArgs,"-Q"])
         log( "Build command  = ", cli)
 
