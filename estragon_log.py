@@ -7,7 +7,7 @@
 class log(object)   :
 
     #inner singleton class
-    class __estragonLog:
+    class __estragon_log:
 
         # the enitre log string. 
         _LogString = str()
@@ -62,23 +62,23 @@ class log(object)   :
     # call to log()
     def __init__(self, *arg):
         if not log.instance:
-            log.instance = log.__estragonLog()
+            log.instance = log.__estragon_log()
         log.instance.printToLog(arg)
 
     #def __getattr__(self, name):
     #   return getattr(self.instance, name)
 
     @staticmethod
-    def enableDebug(Enable = True)   :
-        log.instance.debug = Enable
+    def enable_debug(enable :bool = True)   :
+        log.instance.debug = enable
 
     @staticmethod
-    def isDebug()   :
+    def is_debug()   :
         return log.instance.debug is True
 
 
     @staticmethod
-    def getLog()    :
+    def get_log()    :
         return log.instance
     
     
