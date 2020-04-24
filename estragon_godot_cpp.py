@@ -13,7 +13,7 @@ class build_godot_cpp()   :
     # build editor with this current builder
     def build_godot_cpp_bindings(self, extraArgs : str = str())    :
         try :
-            self._build(extraArgs)
+            self.build(extraArgs.join(" generate_bindings=yes"))
         except AssertionError :
             log("failed to build editor")
             raise
@@ -21,7 +21,7 @@ class build_godot_cpp()   :
 # allow to run from a shell-run python:
 # python3 estragon_build_godot.py path_to_godot
 if __name__ == "__main__":
-    print("estragon build command called from shell")
+    print("estragon godot_cpp command called from shell")
     from sys import argv
     try:
         builder = build_godot_cpp(argv[1], True)

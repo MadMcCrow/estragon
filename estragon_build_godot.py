@@ -14,7 +14,7 @@ class build_godot(build)   :
     # build editor with this current builder
     def build_editor(self, extraArgs : str = str())    :
         try :
-            self._build(extraArgs)
+            self.build(extraArgs)
         except AssertionError :
             log("failed to build editor")
             raise

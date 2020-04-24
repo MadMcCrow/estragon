@@ -39,7 +39,7 @@ class build()   :
 
     _plateform = "x11" if platform.startswith('linux') else ("windows" if platform.startswith('win')  else None)
 
-    def _build(self, extraArgs : str = str()) :
+    def build(self, extraArgs : str = str()) :
         log("checking requisites :" ,self._SourcesPath, self._llvm, self._scons, self._plateform)
         assert path.exists(self._SourcesPath)
         assert self._scons
