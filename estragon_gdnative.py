@@ -12,24 +12,24 @@ class build_godot_cpp(build)   :
 
     # in godot-cpp linux is not x11 but linux
     def plateform(self) :
-        return "linux" if platform.startswith('linux') else ("windows" if platform.startswith('win')  else None)
+        return "x11" if platform.startswith('linux') else ("windows" if platform.startswith('win')  else None)
 
     # build editor with this current builder
-    def build_godot_cpp_bindings(self, extraArgs : str = str())    :
+    def build_gdnative_libs(self, extraArgs : str = str())    :
         try :
-            self.build(extraArgs + " generate_bindings=yes")
+            self.build(extraArgs)
         except AssertionError :
             log("failed to build editor")
             raise
         
 # allow to run from a shell-run python:
-# python3 estragon_build_godot.py path_to_godot
+# python3 estragon_gdnative.py path to godot project root
 if __name__ == "__main__":
-    print("estragon godot_cpp command called from shell")
+    print("estragon estragon_gdnative command called from shell")
     from sys import argv
     try:
         builder = build_godot_cpp(argv[1], True)
-        builder.build_godot_cpp_bindings(" ".join(argv[2:]))
+        builder.build_gdnative_libs(" ".join(argv[2:]))
     except Exception:
         print ("an error occured, printing log : ")
         print(log.get_log())

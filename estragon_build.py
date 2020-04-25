@@ -10,6 +10,8 @@ from multiprocessing    import cpu_count
 from os                 import path
 from os                 import chdir
 from datetime           import datetime
+from ctypes             import sizeof
+from ctypes             import c_voidp
 import time
 from subprocess import DEVNULL
 from subprocess import check_call as call
@@ -21,6 +23,7 @@ from shlex import split as clisplit
 #
 class build()   :
     
+    _bits = 32 if sizeof(c_voidp) == 4 else 64
 
     # Do we display scons output
     _showSconsOutput = True
@@ -37,13 +40,16 @@ class build()   :
     # whether scons is available
     _scons  = which("scons") is not None
 
-    _plateform = "x11" if platform.startswith('linux') else ("windows" if platform.startswith('win')  else None)
+    # due to inconsistency in godot we need to be capable to override this function
+    def plateform(self) :
+        return "x11" if platform.startswith('linux') else ("windows" if platform.startswith('win')  else None)
+
 
     def build(self, extraArgs : str = str()) :
-        log("checking requisites :" ,self._SourcesPath, self._llvm, self._scons, self._plateform)
+        log("checking requisites :" ,self._SourcesPath, self._llvm, self._scons, self.plateform())
         assert path.exists(self._SourcesPath)
         assert self._scons
-        assert self._plateform is not None
+        assert self.plateform() is not None
         #avoid null argument
 
         #look for the correct path
@@ -53,14 +59,9 @@ class build()   :
         # building the command line
         llvm        = "".join(["llvm=",("yes" if self._llvm else "no")])
         threads     = "".join(["-j",str(self._CPUAvailable)])
-        plateform   = "".join(["platform=" + self._plateform])
-        
-        try :
-            extraArgs = " ".join(extraArgs)
-        except TypeError :
-            extraArgs = ""
-
-        cli = " ".join(["scons", threads, plateform, llvm, extraArgs,"-Q"])
+        plateform   = "".join(["platform=", self.plateform()])
+        bits        = "".join(["bits=", str(self._bits)])
+        cli = " ".join(["scons", threads, plateform, llvm, extraArgs, bits,"-Q"])
         log( "Build command  = ", cli)
 
         # time stamping

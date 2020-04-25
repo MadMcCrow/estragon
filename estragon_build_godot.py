@@ -26,7 +26,7 @@ if __name__ == "__main__":
     from sys import argv
     try:
         builder = build_godot(argv[1], True)
-        builder.build_editor(argv[2:])
+        builder.build_editor( " ".join(argv[2:]))
     except Exception:
         print ("an error occured, printing log : ")
         print(log.get_log())
