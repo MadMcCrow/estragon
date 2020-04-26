@@ -4,7 +4,7 @@
 
 # useful modules
 from estragon_log	import log
-from git 		import repo
+from git 			import repo
 
 #
 # a class representing a git repo

@@ -6,18 +6,28 @@
 from estragon_log       import log
 from estragon_build     import build
 from sys                import platform
+from os                 import path
 
 # A nice tool to build godot editor with the appropriate parameters.
-class build_godot_cpp(build)   :
+class build_gdnative_cpp(build)   :
 
-    # in godot-cpp linux is not x11 but linux
+    # folder where built binaries 
+    _buildtargetpath = "./bin"
+
+    # for gdnative it's x11
     def plateform(self) :
         return "x11" if platform.startswith('linux') else ("windows" if platform.startswith('win')  else None)
+
+    # in godot-cpp and gdnative it's use_llvm instead of llvm
+    def ccArguments(self)  :
+        return "".join(["use_llvm=",("yes" if self._llvm else "no")])
 
     # build editor with this current builder
     def build_gdnative_libs(self, extraArgs : str = str())    :
         try :
-            self.build(extraArgs)
+            self.makeDir(path.normpath(path.join(self.getSconsPath(), self._buildtargetpath)))
+            target_path = "".join(["target_path=", self._buildtargetpath])
+            self.build(" ".join([extraArgs,target_path]))
         except AssertionError :
             log("failed to build editor")
             raise
@@ -28,7 +38,7 @@ if __name__ == "__main__":
     print("estragon estragon_gdnative command called from shell")
     from sys import argv
     try:
-        builder = build_godot_cpp(argv[1], True)
+        builder = build_gdnative_cpp(argv[1], True)
         builder.build_gdnative_libs(" ".join(argv[2:]))
     except Exception:
         print ("an error occured, printing log : ")

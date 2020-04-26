@@ -2,6 +2,9 @@
 # This work is licensed under the terms of the MIT license. 
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
+from os.path import basename
+import inspect
+
 # A nice log that behave as a singleton.
 # Allows you to store debug info and display them if an error occurs at some point
 class log(object)   :
@@ -29,16 +32,14 @@ class log(object)   :
             text = str()
             itemlist = list(*intexts)
             for t in itemlist   :
-                text += str(t) + " "
-            
-            # getting context :
-            import inspect
+                text += str(t) + " "    
+            # getting context :  
             curframe = inspect.currentframe()
             calframe = inspect.getouterframes(curframe, 2)
             # calframe[steps backs][info]
             # 2 steps backs correspond to the function directly calling EstragonLog()
             # which file called this
-            from os.path import basename
+
             callfile = basename(str(calframe[2][1]))
             # which line
             callline = str(calframe[2][2])

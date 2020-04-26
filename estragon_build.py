@@ -9,14 +9,14 @@ from sys                import platform
 from multiprocessing    import cpu_count
 from os                 import path
 from os                 import chdir
+from os                 import mkdir
 from datetime           import datetime
 from ctypes             import sizeof
 from ctypes             import c_voidp
+from subprocess         import DEVNULL
+from subprocess         import check_call   as call
+from shlex              import split        as clisplit
 import time
-from subprocess import DEVNULL
-from subprocess import check_call as call
-from shlex import split as clisplit
-
 
 #
 # Base class for building godot, godot tools, and godot projects
@@ -40,10 +40,34 @@ class build()   :
     # whether scons is available
     _scons  = which("scons") is not None
 
-    # due to inconsistency in godot we need to be capable to override this function
+
+    # try to create folder
+    def makeDir(self, path) :
+        try:
+            mkdir(path)
+        except FileExistsError      :
+            log("Directory " ,path, " already exists")
+            # this is fine
+        except FileNotFoundError    :
+            # this is wrong
+            log("Directory " ,path , " failed to create folder")
+            raise
+        else    :
+            log("Directory " , path, " Created ") 
+        
+
+
+    # due to inconsistency in godot/godot-cpp we need to be capable to override this function
     def plateform(self) :
         return "x11" if platform.startswith('linux') else ("windows" if platform.startswith('win')  else None)
 
+    # allow to get the build path
+    def getSconsPath(self) :
+        return self._SourcesPath
+
+    # due to inconsistency in godot/godot-cpp we need to be capable to override this function
+    def ccArguments(self)  :
+        return "".join(["llvm=",("yes" if self._llvm else "no")])
 
     def build(self, extraArgs : str = str()) :
         log("checking requisites :" ,self._SourcesPath, self._llvm, self._scons, self.plateform())
@@ -57,7 +81,7 @@ class build()   :
         log("Building godot on path = ", self._SourcesPath)
 
         # building the command line
-        llvm        = "".join(["llvm=",("yes" if self._llvm else "no")])
+        llvm        = self.ccArguments()
         threads     = "".join(["-j",str(self._CPUAvailable)])
         plateform   = "".join(["platform=", self.plateform()])
         bits        = "".join(["bits=", str(self._bits)])

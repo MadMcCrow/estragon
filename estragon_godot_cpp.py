@@ -14,6 +14,10 @@ class build_godot_cpp(build)   :
     def plateform(self) :
         return "linux" if platform.startswith('linux') else ("windows" if platform.startswith('win')  else None)
 
+    # in godot-cpp and gdnative it's use_llvm instead of llvm
+    def ccArguments(self)  :
+        return "".join(["use_llvm=",("yes" if self._llvm else "no")])
+
     # build editor with this current builder
     def build_godot_cpp_bindings(self, extraArgs : str = str())    :
         try :
