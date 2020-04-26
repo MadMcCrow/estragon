@@ -38,24 +38,7 @@ class build()   :
     _llvm   = which("clang") is not None
 
     # whether scons is available
-    _scons  = which("scons") is not None
-
-
-    # try to create folder
-    def makeDir(self, path) :
-        try:
-            mkdir(path)
-        except FileExistsError      :
-            log("Directory " ,path, " already exists")
-            # this is fine
-        except FileNotFoundError    :
-            # this is wrong
-            log("Directory " ,path , " failed to create folder")
-            raise
-        else    :
-            log("Directory " , path, " Created ") 
-        
-
+    _scons  = which("scons") is not None        
 
     # due to inconsistency in godot/godot-cpp we need to be capable to override this function
     def plateform(self) :

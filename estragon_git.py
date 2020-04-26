@@ -14,7 +14,7 @@ class git(object)   :
 	_Path = str()
 	
 
-	__init__(self, path) :
+	def __init__(self, path) :
 		super().__init__()
 
 #
@@ -22,5 +22,6 @@ class git(object)   :
 #
 class dependancy(git):
 
-
+		def __init__(self, path) :
+			super().__init__(path)
  
