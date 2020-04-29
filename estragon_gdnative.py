@@ -113,7 +113,61 @@ class gdlib_file(configFile):
 
         
         
+## gdns
+## file to make add library as a ressource in godot
+class gdns_file(configFile):
 
+    ## _libname
+    ## name of module we're making a description of
+    _libname = str()
+
+    ## _libname
+    ## name of module we're making a description of
+    _buildpath = str()
+
+
+    # File looks like this
+    '''
+    [gd_resource type="NativeScript" load_steps=2 format=2]
+
+    [ext_resource path="res://bin/gdexample.gdnlib" type="GDNativeLibrary" id=1]
+
+    [resource]
+
+    resource_name = "gdexample"
+    class_name = "GDExample"
+    library = ExtResource( 1 )
+    '''
+
+    def gd_ressource(self) -> str :
+        return "gd_resource type=\"NativeScript\" load_steps=2 format=2"
+
+    def ext_resource(self) -> str :
+        respath = "\"res://" + path.realpath(path.join(self._buildpath, self._libname + ".gdnlib"))+ "\""
+        return "ext_resource path=" + respath +  " type=\"GDNativeLibrary\" id=1"
+
+    def resource(self) -> dict :
+        return {
+            "resource_name" :  "\"" + self._libname + "\"",
+            "class_name"    :  "\"" + self._libname + "\"",
+            "library"       :  "ExtResource( 1 )"
+        }
+
+    def __init__(self, build_path : str, lib_name : str):
+        try :
+            self._libname   = lib_name
+            self._buildpath = build_path
+            filename = ".".join([lib_name, "gdns"])
+            filepath = path.join(self._buildpath, filename)
+            super().__init__(filepath, '[]')
+            assert len(lib_name) > 0 
+            assert not fileTools.checkFileExist(filepath)
+            self.addSection(self.gd_ressource(),dict())
+            self.addSection(self.ext_resource(), dict())
+            self.addSection("resource",self.resource())
+            self.writeConfig()
+        except AssertionError   :
+            log("Warning : could not create gdns_file file")
 
 
 
@@ -155,6 +209,7 @@ class build_gdnative_cpp(build)   :
                     filepath = path.join(self.getSconsPath(), self._buildtargetpath, filename)
                     assert not fileTools.checkFileExist(filepath)
                     gdlib_file(basepath, libname)
+                    gdns_file(basepath, libname)
         except AssertionError :
             log("gdnlib file already exist, cannot create it")
             raise
