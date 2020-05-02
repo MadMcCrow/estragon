@@ -46,13 +46,13 @@ class gdlib_file(configFile):
 
     # static dictionnary of plateforms and path
     s_plateforms = {
-        "Linux.64"      : "x11",
-        "Windows.64"    : "win64",
-        "OSX.64"        : "osx"
+        "X11.64"      	 : "x11",
+        "Windows.64"     : "win64",
+        "OSX.64"         : "osx"
         }
 
     s_plateforms_lib_ext = {
-        "Linux.64"      : ".so",
+        "X11.64"        : ".so",
         "Windows.64"    : ".dll",
         "OSX.64"        : ".dylib"
         }
@@ -83,7 +83,8 @@ class gdlib_file(configFile):
     def entry(self) -> dict  :
         retdict = dict()
         for platf, folder in gdlib_file.s_plateforms.items() :
-            retdict[platf] = "\"res://" + path.realpath(path.join(self._buildpath, folder, self._libname + gdlib_file.s_plateforms_lib_ext[platf]))+ "\""
+            libpath =  path.normpath(path.join(self._buildpath, folder, self._libname + gdlib_file.s_plateforms_lib_ext[platf]))
+            retdict[platf] = "\"res://" + libpath + "\""
         return retdict
 
     ## dependencies : list
@@ -190,7 +191,8 @@ class build_gdnative_cpp(build)   :
     ## build libraries with this current builder
     ## TODO : autodetect modules to build them separately
     def build_gdnative_libs(self, extraArgs : str = str())    :
-        fileTools.makeDir(path.normpath(path.join(self.getSconsPath(), self._buildtargetpath)))
+        libpath = path.normpath(path.join(self.getSconsPath(), self._buildtargetpath))
+        fileTools.makeDir(libpath)
         target_path = "".join(["target_path=", self._buildtargetpath])
         self.build(" ".join([extraArgs,target_path]))
 
